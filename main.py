@@ -1,36 +1,136 @@
 import os
-import requests as rq
-from bs4 import BeautifulSoup as bs
+import time
+from tkinter import messagebox
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+
 
 conf_file = "Config.txt"
-period = ""
-post_code = ""
-settlement = ""
-house_number = ""
+URL = "https://www.fkf.hu/hulladeknaptar"
+Chrome_options = Options()
+Chrome_options.add_argument('--headless')
+driver = webdriver.Chrome(options=Chrome_options)
+SEL_DISTRICT = ""
+SEL_PUBLIC_PLACE = ""
+SEL_HOUSE_NUM = ""
+
 
 def Generate_conf_file(file_name):
     if not os.path.isfile(file_name):
         with open(file_name, "w+", encoding="utf-8") as file:
-            file.writelines("Period = None\n")
-            file.writelines("Post code = None\n")
-            file.writelines("Settlement = None\n")
-            file.writelines("House number = None")
+            file.writelines("QueryPeriod(minute) = 0\n")
+            file.writelines("District = None\n")
+            file.writelines("PublicPlace = None\n")
+            file.writelines("HouseNumber = None")
 
 def Load_conf_file(file_name):
     if os.path.isfile(file_name):
+        param_list = list()
         with open(file_name,"r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip().split(" = ")
-                if line[0] == "Period":
-                        period = line[1]
-                elif line[0] == "Post code":
-                        post_code = line[1]
-                elif line[0] == "Settlement":
-                        settlement = line[1]
-                elif line[0] == "House number":
-                        house_number = line[1]
-                else:
-                     print("A konfig fájl sérült vagy nem olvasható!")
+                param_list.append(line[1])
+        return param_list
+    else:
+        Generate_conf_file(file_name)
+
+def Set_list_data(element, data):
+    Select(driver.find_element(By.ID, element)).select_by_value(data)
+    time.sleep(3)
+
+def ClickButton(text):
+    driver.find_element(By.XPATH, f"//button[text()='{text}']").click()
+    time.sleep(3)
+
+def Collect_data_from_result_table(class_name):
+    tables = driver.find_elements(By.TAG_NAME, class_name)
+    scrap_type = {"Szelektív"}
+    ret_list = list()
+    for t in tables:
+        if len(tables)>1:
+            tr_list = t.find_elements(By.TAG_NAME, "tbody")
+            for row in tr_list:
+                td_list = row.find_elements(By.TAG_NAME, "tr")
+                for td in td_list:
+                    td = td.text.split(" ")
+                    if len(td)>2 and td[2] in scrap_type:
+                        ret_list.append(td)
+    return ret_list
+
+def Get_districts():
+    ret = list()
+    data = driver.find_elements(By.ID, "districts")
+    data = data[0].text.split("\n")
+    for distr in data:
+        distr = distr.split(" ")
+        if len(distr) > 2:
+            ret.append(distr[2])
+    ret = ",".join(ret)
+    return ret
+
+def Get_public_places():
+    ret = list()
+    select_element = Select(driver.find_element(By.ID, "publicPlaces"))
+    all_options = select_element.options
+    for option in all_options:
+        tmp = option.get_attribute('value')
+        if tmp != "false":
+            ret.append(tmp)
+    ret = ",".join(ret)
+    return ret
+
+def Get_house_numbers():
+    ret = list()
+    select_element = Select(driver.find_element(By.ID, "houseNumber"))
+    all_options = select_element.options
+    for option in all_options:
+        tmp = option.get_attribute('value')
+        if tmp != "false":
+            ret.append(tmp)
+    ret = ",".join(ret)
+    return ret
+
+def Read_user_choice(param, list_name, msg):
+    while param == "None":
+        tmp = input(msg)
+        if tmp in list_name:
+            param = tmp
+            return param
+        else:
+            print("Hibás adat!")
+
 #main
-Generate_conf_file(conf_file)
-Load_conf_file(conf_file)
+driver.get(URL)
+time.sleep(2)
+
+params = Load_conf_file(conf_file)
+
+districts = Get_districts()
+print(f"Elérhető irányítószámok:\n{districts}")
+SEL_DISTRICT = Read_user_choice(params[1], districts, "Kérem adja meg az irányítószámot: ")
+Set_list_data("districts", SEL_DISTRICT)
+
+public_places = Get_public_places()
+print(f"Elérhető utcák:\n{public_places}")
+SEL_PUBLIC_PLACE = Read_user_choice(params[2], public_places, "Kérem adja meg az utcanevet: ")
+Set_list_data("publicPlaces", SEL_PUBLIC_PLACE)
+
+house_numbers = Get_house_numbers()
+print(f"Elérhető házszámok:\n{house_numbers}")
+SEL_HOUSE_NUM = Read_user_choice(params[3], house_numbers, "Kérem adja meg a házszámot: ")
+Set_list_data("houseNumber", SEL_HOUSE_NUM)
+
+
+ClickButton("Keresés")
+ret_data = Collect_data_from_result_table("table")
+if len(ret_data) == 0:
+    ret_data  = "Nincs adat!"
+else:
+    s = "Szelektív szemétszállítás időpontjai:\n"
+    for sor in ret_data:
+        s+=f"{sor[1]} - {sor[0]}\n" 
+    ret_data = s
+driver.close()
+messagebox.showinfo("Értesítő", ret_data)

@@ -1,0 +1,4 @@
+QueryPeriod(minute) = 0
+District = None
+PublicPlace = None
+HouseNumber = None
