@@ -18,12 +18,11 @@ SEL_HOUSE_NUM = ""
 
 
 def Generate_conf_file(file_name):
-    if not os.path.isfile(file_name):
-        with open(file_name, "w+", encoding="utf-8") as file:
-            file.writelines("QueryPeriod(minute) = 0\n")
-            file.writelines("District = None\n")
-            file.writelines("PublicPlace = None\n")
-            file.writelines("HouseNumber = None")
+    with open(file_name, "w+", encoding="utf-8") as file:
+        file.writelines("QueryPeriod(minute) = 0\n")
+        file.writelines("District = None\n")
+        file.writelines("PublicPlace = None\n")
+        file.writelines("HouseNumber = None")
 
 def Load_conf_file(file_name):
     if os.path.isfile(file_name):
@@ -34,6 +33,7 @@ def Load_conf_file(file_name):
                 param_list.append(line[1])
         return param_list
     else:
+        print("Nem található konfigurációs fájl!")
         Generate_conf_file(file_name)
 
 def Set_list_data(element, data):
