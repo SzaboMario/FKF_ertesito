@@ -1,4 +1,4 @@
 QueryPeriod(minute) = 0
-District = None
-PublicPlace = None
-HouseNumber = None
+District = 1158
+PublicPlace = Neptun---utca
+HouseNumber = 58

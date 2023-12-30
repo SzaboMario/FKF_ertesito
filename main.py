@@ -12,33 +12,52 @@ URL = "https://www.fkf.hu/hulladeknaptar"
 Chrome_options = Options()
 Chrome_options.add_argument('--headless')
 driver = webdriver.Chrome(options=Chrome_options)
-SEL_DISTRICT = ""
+SEL_QUERY_PERIOD = "0"
+SEL_DISTRICT = "0"
 SEL_PUBLIC_PLACE = ""
-SEL_HOUSE_NUM = ""
+SEL_HOUSE_NUM = "0"
 
 
 def Generate_conf_file(file_name):
-    with open(file_name, "w+", encoding="utf-8") as file:
-        file.writelines("QueryPeriod(minute) = 0\n")
-        file.writelines("District = None\n")
-        file.writelines("PublicPlace = None\n")
-        file.writelines("HouseNumber = None")
+    if not os.path.isfile(file_name):
+        with open(file_name, "w", encoding="utf-8") as file:
+            file.writelines("QueryPeriod(minute) = 0\n")
+            file.writelines("District = 0\n")
+            file.writelines("PublicPlace = None\n")
+            file.writelines("HouseNumber = 0")
 
 def Load_conf_file(file_name):
     if os.path.isfile(file_name):
-        param_list = list()
-        with open(file_name,"r", encoding="utf-8") as file:
+        with open(file_name,"r", encoding="utf-8") as file: 
             for line in file:
                 line = line.strip().split(" = ")
-                param_list.append(line[1])
-        return param_list
+                if line[0].find("QueryPeriod") != -1:
+                    global SEL_QUERY_PERIOD
+                    SEL_QUERY_PERIOD = line[1]
+                elif line[0].find("District") != -1:
+                    global SEL_DISTRICT
+                    SEL_DISTRICT = line[1]
+                elif line[0].find("PublicPlace") != -1:
+                    global SEL_PUBLIC_PLACE
+                    SEL_PUBLIC_PLACE = line[1]
+                else:
+                    global SEL_HOUSE_NUM
+                    SEL_HOUSE_NUM = line[1]
     else:
         print("Nem található konfigurációs fájl!")
         Generate_conf_file(file_name)
 
+def Write_config_file(file_name, data_list):
+    with open(file_name, "w+", encoding="utf-8") as file:
+        file.write(f"QueryPeriod(minute) = {data_list[0]}\n")
+        file.write(f"District = {data_list[1]}\n")
+        file.write(f"PublicPlace = {data_list[2]}\n")
+        file.write(f"HouseNumber = {data_list[3]}")
+
+
 def Set_list_data(element, data):
     Select(driver.find_element(By.ID, element)).select_by_value(data)
-    time.sleep(3)
+    time.sleep(5)
 
 def ClickButton(text):
     driver.find_element(By.XPATH, f"//button[text()='{text}']").click()
@@ -67,7 +86,6 @@ def Get_districts():
         distr = distr.split(" ")
         if len(distr) > 2:
             ret.append(distr[2])
-    ret = ",".join(ret)
     return ret
 
 def Get_public_places():
@@ -78,7 +96,6 @@ def Get_public_places():
         tmp = option.get_attribute('value')
         if tmp != "false":
             ret.append(tmp)
-    ret = ",".join(ret)
     return ret
 
 def Get_house_numbers():
@@ -89,37 +106,39 @@ def Get_house_numbers():
         tmp = option.get_attribute('value')
         if tmp != "false":
             ret.append(tmp)
-    ret = ",".join(ret)
     return ret
 
-def Read_user_choice(param, list_name, msg):
-    while param == "None":
-        tmp = input(msg)
-        if tmp in list_name:
-            param = tmp
-            return param
-        else:
+def Read_user_choice(param, list, msg):
+    while not param in list:
+        param = input(msg)
+        found = param in list
+        if not found:
             print("Hibás adat!")
-
+        else:
+            return param
+            
 #main
 driver.get(URL)
 time.sleep(2)
+Generate_conf_file(conf_file)
+Load_conf_file(conf_file)
 
-params = Load_conf_file(conf_file)
-
-districts = Get_districts()
-print(f"Elérhető irányítószámok:\n{districts}")
-SEL_DISTRICT = Read_user_choice(params[1], districts, "Kérem adja meg az irányítószámot: ")
+if SEL_DISTRICT == "0":
+    districts = Get_districts()
+    print(f"Elérhető irányítószámok:\n{districts}")
+    SEL_DISTRICT = Read_user_choice(SEL_DISTRICT, districts, "Kérem adja meg az irányítószámot: ")
 Set_list_data("districts", SEL_DISTRICT)
 
-public_places = Get_public_places()
-print(f"Elérhető utcák:\n{public_places}")
-SEL_PUBLIC_PLACE = Read_user_choice(params[2], public_places, "Kérem adja meg az utcanevet: ")
+if SEL_PUBLIC_PLACE == "None":
+    public_places = Get_public_places()
+    print(f"Elérhető utcák:\n{public_places}")
+    SEL_PUBLIC_PLACE = Read_user_choice(SEL_PUBLIC_PLACE, public_places, "Kérem adja meg az utcanevet: ")
 Set_list_data("publicPlaces", SEL_PUBLIC_PLACE)
 
-house_numbers = Get_house_numbers()
-print(f"Elérhető házszámok:\n{house_numbers}")
-SEL_HOUSE_NUM = Read_user_choice(params[3], house_numbers, "Kérem adja meg a házszámot: ")
+if SEL_HOUSE_NUM == "0":
+    house_numbers = Get_house_numbers()
+    print(f"Elérhető házszámok:\n{house_numbers}")
+    SEL_HOUSE_NUM = Read_user_choice(SEL_HOUSE_NUM, house_numbers, "Kérem adja meg a házszámot: ")
 Set_list_data("houseNumber", SEL_HOUSE_NUM)
 
 
@@ -132,5 +151,6 @@ else:
     for sor in ret_data:
         s+=f"{sor[1]} - {sor[0]}\n" 
     ret_data = s
+    Write_config_file(conf_file, [SEL_QUERY_PERIOD, SEL_DISTRICT, SEL_PUBLIC_PLACE, SEL_HOUSE_NUM])
 driver.close()
 messagebox.showinfo("Értesítő", ret_data)
