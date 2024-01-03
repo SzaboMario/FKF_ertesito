@@ -1,4 +1,4 @@
 QueryPeriod(minute) = 0
-District = 1158
-PublicPlace = Neptun---utca
-HouseNumber = 58
+District = 1186
+PublicPlace = Sólyom---utca
+HouseNumber = 55

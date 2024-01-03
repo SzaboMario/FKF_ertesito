@@ -1,11 +1,12 @@
 import File_handle as fh
+import Notifications as noti
 import time
-from tkinter import messagebox
+
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from plyer import notification
+
 
 
 
@@ -16,13 +17,7 @@ Chrome_options.add_argument('--headless')
 driver = webdriver.Chrome(options=Chrome_options)
 
 
-def send_notification(title, message):
-    notification.notify(
-        title=title,
-        message=message,
-        app_icon=None, 
-        timeout=15,  
-    )
+
 
 def Set_list_data(element, data):
     Select(driver.find_element(By.ID, element)).select_by_value(data)
@@ -122,5 +117,7 @@ else:
     ret_data = s
     fh.Write_config_file(conf_file, [fh.SEL_QUERY_PERIOD, fh.SEL_DISTRICT, fh.SEL_PUBLIC_PLACE, fh.SEL_HOUSE_NUM])
 driver.close()
-#messagebox.showinfo("Értesítő", ret_data)
-send_notification("Értesítő", ret_data)
+
+noti.Console_log(f"Sikeres futtatás! {ret_data.replace("\n", "")}")
+noti.Universal_noti("FKF értesítő", ret_data)
+#noti.messagebox.showinfo("Ertesítés", ret_data)
