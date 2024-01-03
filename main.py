@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from plyer import notification
+
 
 
 conf_file = "Config.txt"
@@ -17,6 +19,13 @@ SEL_DISTRICT = "0"
 SEL_PUBLIC_PLACE = ""
 SEL_HOUSE_NUM = "0"
 
+def send_notification(title, message):
+    notification.notify(
+        title=title,
+        message=message,
+        app_icon=None, 
+        timeout=15,  
+    )
 
 def Generate_conf_file(file_name):
     if not os.path.isfile(file_name):
@@ -28,7 +37,7 @@ def Generate_conf_file(file_name):
 
 def Load_conf_file(file_name):
     if os.path.isfile(file_name):
-        with open(file_name,"r", encoding="utf-8") as file: 
+        with open(file_name, "r", encoding="utf-8") as file: 
             for line in file:
                 line = line.strip().split(" = ")
                 if line[0].find("QueryPeriod") != -1:
@@ -57,11 +66,11 @@ def Write_config_file(file_name, data_list):
 
 def Set_list_data(element, data):
     Select(driver.find_element(By.ID, element)).select_by_value(data)
-    time.sleep(5)
+    time.sleep(4)
 
 def ClickButton(text):
     driver.find_element(By.XPATH, f"//button[text()='{text}']").click()
-    time.sleep(3)
+    time.sleep(4)
 
 def Collect_data_from_result_table(class_name):
     tables = driver.find_elements(By.TAG_NAME, class_name)
@@ -119,7 +128,7 @@ def Read_user_choice(param, list, msg):
             
 #main
 driver.get(URL)
-time.sleep(2)
+time.sleep(4)
 Generate_conf_file(conf_file)
 Load_conf_file(conf_file)
 
@@ -153,4 +162,5 @@ else:
     ret_data = s
     Write_config_file(conf_file, [SEL_QUERY_PERIOD, SEL_DISTRICT, SEL_PUBLIC_PLACE, SEL_HOUSE_NUM])
 driver.close()
-messagebox.showinfo("Értesítő", ret_data)
+#messagebox.showinfo("Értesítő", ret_data)
+send_notification("Értesítő", ret_data)
