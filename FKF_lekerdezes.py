@@ -1,7 +1,7 @@
 import File_handle as fh
 import Notifications as noti
+import Task_scheduler as ts
 import time
-
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
@@ -10,14 +10,12 @@ from selenium.webdriver.chrome.options import Options
 
 
 
-conf_file = "Config.txt"
-URL = "https://www.fkf.hu/hulladeknaptar"
-Chrome_options = Options()
-Chrome_options.add_argument('--headless')
-driver = webdriver.Chrome(options=Chrome_options)
 
-
-
+def Init_Task(task_name, start_hour, start_minute):
+    if __name__ == "__main__" and not ts.Task_exists(task_name):
+        my_task = ts.Task(task_name=task_name, executable_path=r"FKF_lekerdezes.py")
+        my_task.Add_trigger(start_hour=start_hour, start_minute=start_minute) 
+        my_task.Create_task()
 
 def Set_list_data(element, data):
     Select(driver.find_element(By.ID, element)).select_by_value(data)
@@ -80,8 +78,23 @@ def Read_user_choice(param, list, msg):
             print("Hibás adat!")
         else:
             return param
-            
-#main
+
+
+#PRECONF     
+#####################################################
+conf_file = "Config.txt"
+URL = "https://www.fkf.hu/hulladeknaptar"
+Chrome_options = Options()
+Chrome_options.add_argument('--headless')
+driver = webdriver.Chrome(options=Chrome_options)
+task_name = "FKF értesítő"        
+##########################################################
+
+#MAIN
+#######################################################
+noti.Console_log("A lekédezéss elindult")
+noti.Universal_noti(task_name, "A lekédezéss elindult.", 0)
+Init_Task(task_name, 14, 50)
 driver.get(URL)
 time.sleep(4)
 fh.Generate_conf_file(conf_file)
@@ -118,6 +131,7 @@ else:
     fh.Write_config_file(conf_file, [fh.SEL_QUERY_PERIOD, fh.SEL_DISTRICT, fh.SEL_PUBLIC_PLACE, fh.SEL_HOUSE_NUM])
 driver.close()
 
-noti.Console_log(f"Sikeres futtatás! {ret_data.replace("\n", "")}")
-noti.Universal_noti("FKF értesítő", ret_data)
+noti.Console_log(f"Sikeres futtatás! {ret_data.replace("\n", ", ")}")
+noti.Universal_noti("FKF értesítő", ret_data, 10)
 #noti.messagebox.showinfo("Ertesítés", ret_data)
+########################################################
